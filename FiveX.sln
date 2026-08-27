@@ -1,0 +1,16 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FiveX", "FiveX.vcxproj", "{A50C4E2A-36D3-4E72-9D33-6CD83EDE8CA3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|Xbox 360 = Release|Xbox 360
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A50C4E2A-36D3-4E72-9D33-6CD83EDE8CA3}.Release|Xbox 360.ActiveCfg = Release|Xbox 360
+		{A50C4E2A-36D3-4E72-9D33-6CD83EDE8CA3}.Release|Xbox 360.Build.0 = Release|Xbox 360
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

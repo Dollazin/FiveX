@@ -1,0 +1,38 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+ipch/
+
+# Xbox 360 / build output
+Compiled/
+obj/
+Release/
+Debug/
+Dev/
+*.xdb
+*.exe
+*.ilk
+*.pdb
+*.idb
+*.exp
+*.lib
+*.obj
+*.tlog
+*.lastbuildstate
+*.log
+
+# Local/editor files
+.vscode/
+.idea/
+*.tmp
+*.bak
+*.swp
+Thumbs.db
+Desktop.ini
+
+# Runtime data copied beside the source
+Resources/
+Logs/
