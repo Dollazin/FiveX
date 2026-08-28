@@ -131,6 +131,10 @@ limites está em [LUA_RESOURCES.md](LUA_RESOURCES.md).
 Uma resource mínima pronta para copiar também está em
 [`Examples/hello_fivex`](Examples/hello_fivex).
 
+O exemplo [`Examples/dolla_fuel_fivex`](Examples/dolla_fuel_fivex) demonstra
+um sistema completo de combustível com bomba, bico e mangueira física no Xbox
+360. Ele também serve como referência para as bindings seguras de rope.
+
 ## Compilando a source
 
 1. Instale e configure legalmente o Xbox 360 XDK.

@@ -53,7 +53,8 @@ function Get-SourceArgumentType([string]$declaration) {
 }
 
 function Test-OutputPointerKind([string]$kind) {
-    return $kind -match '^FiveXLuaNativeArgumentPointerOut'
+    return $kind -eq 'FiveXLuaNativeArgumentPointerNull' -or
+        $kind -match '^FiveXLuaNativeArgumentPointerOut'
 }
 
 function New-CatalogEntry([string]$name, [string]$hash,
@@ -91,6 +92,7 @@ $inputPointerNatives = @{
     'DELETE_MISSION_TRAIN' = $true
     'DELETE_OBJECT' = $true
     'DELETE_PED' = $true
+    'DELETE_ROPE' = $true
     'DELETE_VEHICLE' = $true
     'REMOVE_BLIP' = $true
     'REMOVE_PED_ELEGANTLY' = $true
@@ -118,6 +120,10 @@ $unsafePointerNatives = @{
 
 function Get-PointerArgumentKind([string]$type, [string]$nativeName) {
     $type = ($type -replace '\s+', '').Trim()
+    if (($nativeName -eq 'ADD_ROPE' -or $nativeName -eq 'ATTACH_ENTITIES_TO_ROPE') -and
+        $type -eq 'Any*') {
+        return 'FiveXLuaNativeArgumentPointerNull'
+    }
     if ($unsafePointerNatives.ContainsKey($nativeName)) { return $null }
     if ($inputPointerNatives.ContainsKey($nativeName)) {
         if ($type -match '^(int|Entity|Vehicle|Ped|Object|Blip)\*$') {

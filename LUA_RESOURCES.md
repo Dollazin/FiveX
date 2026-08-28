@@ -335,6 +335,33 @@ SetVehicleEngineOn, IsControlJustPressed
 Além deles, use os nomes disponíveis em
 `Runtime/Lua/LuaNativeCatalog.inl`.
 
+### Corda física
+
+O catálogo também expõe as natives Xbox de rope usadas por resources de
+mangueira, reboque e cabo:
+
+```lua
+RopeLoadTextures()
+local rope = AddRope(
+    x, y, z,
+    0.0, 0.0, 0.0,
+    initialLength, 4, maxLength, 0.5, 0.5,
+    false, false, false, 1.0, false
+)
+
+AttachEntitiesToRope(
+    rope, entity1, entity2,
+    point1.x, point1.y, point1.z,
+    point2.x, point2.y, point2.z,
+    initialLength, false, false
+)
+```
+
+Os ponteiros internos opcionais de `ADD_ROPE` e
+`ATTACH_ENTITIES_TO_ROPE` são preenchidos com `NULL` pelo binding seguro e
+não aparecem como argumentos Lua. `DeleteRope(rope)` recebe o handle normal;
+o runtime cria o ponteiro temporário exigido pela native Xbox.
+
 ## 12. Exemplo: carregar e criar um veículo
 
 ```lua

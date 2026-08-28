@@ -47,6 +47,15 @@ inline BOOL NetworkGetEntityIsNetworked(DWORD entity) { return FiveXInvoke<BOOL>
 inline VOID NetworkRegisterEntityAsNetworked(DWORD entity) { FiveXInvoke<VOID>(0x31A630A4, entity); }
 inline BOOL NetworkHasControlOfEntity(DWORD entity) { return FiveXInvoke<BOOL>(0x005FD797, entity); }
 inline DWORD CreateVehicle(DWORD model, FLOAT x, FLOAT y, FLOAT z, FLOAT heading, BOOL networked, BOOL scriptHandle) { FiveXNativeCallBuilder call(0xDD75460A); return call.Push(model) .Push(x).Push(y).Push(z) .Push(heading).Push(networked).Push(scriptHandle) .Invoke<DWORD>(); }
+inline INT AddRope(FLOAT x, FLOAT y, FLOAT z, FLOAT rotX, FLOAT rotY, FLOAT rotZ, FLOAT length, INT ropeType, FLOAT maxLength, FLOAT minLength, FLOAT windingSpeed, BOOL p11, BOOL p12, BOOL rigid, FLOAT p14, BOOL breakWhenShot, Any* unkPtr) { return FiveXInvoke<INT>(0xA592EC74, x, y, z, rotX, rotY, rotZ, length, ropeType, maxLength, minLength, windingSpeed, p11, p12, rigid, p14, breakWhenShot, unkPtr); }
+inline VOID DeleteRope(INT* ropeId) { FiveXInvoke<VOID>(0x748D72AF, ropeId); }
+inline VOID AttachEntitiesToRope(INT ropeId, Entity ent1, Entity ent2, FLOAT ent1_x, FLOAT ent1_y, FLOAT ent1_z, FLOAT ent2_x, FLOAT ent2_y, FLOAT ent2_z, FLOAT length, BOOL p10, BOOL p11, Any* p12, Any* p13) { FiveXInvoke<VOID>(0x7508668F, ropeId, ent1, ent2, ent1_x, ent1_y, ent1_z, ent2_x, ent2_y, ent2_z, length, p10, p11, p12, p13); }
+inline VOID RopeLoadTextures() { FiveXInvoke<VOID>(0xBA97CE91); }
+inline BOOL RopeAreTexturesLoaded() { return FiveXInvoke<BOOL>(0x5FDC1047); }
+inline VOID RopeUnloadTextures() { FiveXInvoke<VOID>(0x584463E0); }
+inline VOID RopeForceLength(INT ropeId, FLOAT length) { FiveXInvoke<VOID>(0xABF3130F, ropeId, length); }
+inline VOID ActivatePhysics(Entity entity) { FiveXInvoke<VOID>(0x031711B8, entity); }
+inline BOOL GetIsVehicleEngineRunning(Vehicle vehicle) { return FiveXInvoke<BOOL>(0x7DC6D022, vehicle); }
 inline VOID RequestStreamedTextureDict(const CHAR* dictionary, BOOL p1) { FiveXInvoke<VOID>(0x4C9B035F, dictionary, p1); }
 inline BOOL HasStreamedTextureDictLoaded(const CHAR* dictionary) { return FiveXInvoke<BOOL>(0x3F436EEF, dictionary); }
 inline VOID DrawSprite(const CHAR* dictionary, const CHAR* texture, FLOAT x, FLOAT y, FLOAT width, FLOAT height, FLOAT rotation, INT red, INT green, INT blue, INT alpha) { FiveXNativeCallBuilder call(0x1FEC16B0); call.Push(dictionary).Push(texture).Push(x).Push(y).Push(width).Push(height).Push(rotation).Push(red).Push(green).Push(blue).Push(alpha).Invoke<VOID>(); }

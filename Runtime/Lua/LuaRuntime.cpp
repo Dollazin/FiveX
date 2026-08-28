@@ -71,6 +71,7 @@ enum FiveXLuaNativeArgumentType {
 	FiveXLuaNativeArgumentBoolean,
 	FiveXLuaNativeArgumentString,
 	FiveXLuaNativeArgumentPointerInInteger,
+	FiveXLuaNativeArgumentPointerNull,
 	FiveXLuaNativeArgumentPointerOutInteger,
 	FiveXLuaNativeArgumentPointerOutFloat,
 	FiveXLuaNativeArgumentPointerOutBoolean,
@@ -1029,6 +1030,8 @@ static BOOL PushCatalogArgument(lua_State* state, FiveXNativeContext* context,
 		ValidatePointerInputHandle(state, entry, *luaIndex, storage->Integer);
 		++(*luaIndex);
 		return FiveXNativePush(context, &storage->Integer);
+	case FiveXLuaNativeArgumentPointerNull:
+		return FiveXNativePush(context, (DWORD)0);
 	case FiveXLuaNativeArgumentPointerOutInteger:
 		storage->Integer = 0;
 		return FiveXNativePush(context, &storage->Integer);
@@ -1144,6 +1147,7 @@ static VOID ValidateDirectKnownNative(lua_State* state, DWORD hash,
 			entry->ReturnType == FiveXLuaNativeReturnString ? "string" : "vector3");
 	for (INT index = 0; index < entry->NativeArgumentCount; ++index) {
 		if (entry->Arguments[index] == FiveXLuaNativeArgumentPointerInInteger ||
+			entry->Arguments[index] == FiveXLuaNativeArgumentPointerNull ||
 			IsCatalogOutputPointer(entry->Arguments[index]))
 			luaL_error(state,
 				"InvokeNative cannot safely call pointer native %s; use the named Lua binding",
