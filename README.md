@@ -13,6 +13,7 @@ um mod menu, não possui servidor local e não inclui funções de gameplay.
 ## Screenshot
 
 ![Menu de resources Lua do FiveX funcionando no GTA V](docs/images/fivex-menu.png)
+![Mod de Gasolina funcionando no GTA V](docs/images/fivex-fuelmod.png)
 
 ## Recursos principais
 
