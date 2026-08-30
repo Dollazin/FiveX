@@ -59,7 +59,7 @@ local function drawText3D(coords, text)
     SetTextOutline()
     BeginTextCommandDisplayText('STRING')
     AddTextComponentSubstringPlayerName(text)
-    EndTextCommandDisplayText(screenX, screenY, 0)
+    EndTextCommandDisplayText(screenX, screenY)
 end
 
 local function notify(message)
@@ -71,36 +71,9 @@ end
 local function drawFuelHud(fuel)
     local hud = Config.Hud
     local percentage = math.max(0.0, math.min(100.0, fuel))
-    local barWidth = hud.Width - 0.012
-    local barHeight = 0.007
-    local barY = hud.Y + hud.BarOffsetY
-    local filledWidth = barWidth * (percentage / 100.0)
-    local filledX = (hud.X - (barWidth / 2.0)) + (filledWidth / 2.0)
-
-    local red, green, blue = 46, 204, 113
-    if percentage <= 15.0 then
-        red, green, blue = 231, 76, 60
-    elseif percentage <= 35.0 then
-        red, green, blue = 241, 196, 15
-    end
-
-    DrawRect(hud.X, hud.Y, hud.Width, hud.Height, 8, 12, 16, 205, false)
-    DrawRect(hud.X, barY, barWidth, barHeight, 35, 40, 45, 230, false)
-    if filledWidth > 0.0 then
-        DrawRect(filledX, barY, filledWidth, barHeight, red, green, blue, 245, false)
-    end
-
-    SetTextScale(hud.TextScale, hud.TextScale)
-    SetTextFont(4)
-    SetTextProportional(true)
-    SetTextCentre(true)
-    SetTextColour(255, 255, 255, 245)
-    SetTextOutline()
-    BeginTextCommandDisplayText('STRING')
-    AddTextComponentSubstringPlayerName(
-        ('COMBUSTIVEL  %d%%'):format(math.floor(percentage + 0.5))
-    )
-    EndTextCommandDisplayText(hud.X, hud.Y + hud.TextOffsetY, 0)
+    hud.Text.value = percentage
+    hud.Text.content = nil
+    DrawHud(hud.Colors, hud.Size, hud.Position, hud.Text, hud.Icon)
 end
 
 local function playInteractionAnimation(ped)
@@ -332,7 +305,7 @@ local function attachNozzleToHand()
         GetPedBoneIndex(ped, 0x49D9),
         0.11, 0.02, 0.02,
         -80.0, -90.0, 15.0,
-        true, true, false, true, 1, true, 0
+        true, true, false, true, 1, true
     )
     fuelSession.mode = 'holding'
     fuelSession.vehicle = 0
@@ -456,7 +429,7 @@ local function takeNozzle(pump, pumpCoords)
             rope, pump, nozzle,
             ropeStart.x, ropeStart.y, ropeStart.z,
             nozzleEnd.x, nozzleEnd.y, nozzleEnd.z,
-            initialLength, false, false
+            initialLength, false, false, '', ''
         )
         RopeForceLength(rope, initialLength)
     else
@@ -480,14 +453,14 @@ local function connectNozzle(vehicle, bone, tankCoords, boneName)
             fuelSession.nozzle, vehicle, 0,
             localCoords.x, localCoords.y, localCoords.z,
             -105.0, -90.0, -90.0,
-            true, true, false, false, 1, true, 0
+            true, true, false, false, 1, true
         )
     elseif class == 8 then
         AttachEntityToEntity(
             fuelSession.nozzle, vehicle, bone,
             0.0, -0.12, 0.10,
             -80.0, 0.0, 0.0,
-            true, true, false, false, 1, true, 0
+            true, true, false, false, 1, true
         )
     else
         local boneOffset = Config.FuelBoneOffsets[boneName] or vector3(0.0, 0.0, 0.0)
@@ -495,7 +468,7 @@ local function connectNozzle(vehicle, bone, tankCoords, boneName)
             fuelSession.nozzle, vehicle, bone,
             -0.12 + boneOffset.x, boneOffset.y, 0.05 + boneOffset.z,
             -105.0, -90.0, -90.0,
-            true, true, false, false, 1, true, 0
+            true, true, false, false, 1, true
         )
     end
 
@@ -661,7 +634,7 @@ CreateThread(function()
 
                 if nextFuel >= 99.95 then
                     fuelSession.full = true
-                    SetVehicleEngineOn(vehicle, false, true)
+                    SetVehicleEngineOn(vehicle, false, true, true)
                     notify('Tanque cheio. Pegue a mangueira e devolva na bomba.')
                 end
             end
@@ -678,7 +651,7 @@ CreateThread(function()
         if vehicle ~= 0 and canUseFuel(vehicle) then
             lastPlayerVehicle = vehicle
         end
-        if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1, false) == ped and canUseFuel(vehicle) then
+        if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == ped and canUseFuel(vehicle) then
             local fuel = getFuel(vehicle)
             if GetIsVehicleEngineRunning(vehicle) then
                 local class = GetVehicleClass(vehicle)
@@ -690,12 +663,12 @@ CreateThread(function()
                 setFuel(vehicle, nextFuel)
 
                 if nextFuel <= 0.05 then
-                    SetVehicleEngineOn(vehicle, false, true)
+                    SetVehicleEngineOn(vehicle, false, true, true)
                     SetVehicleUndriveable(vehicle, true)
                 else
                     SetVehicleUndriveable(vehicle, false)
                 end
-            elseif fuel > 0.05 and not IsEntityDead(vehicle, false) then
+            elseif fuel > 0.05 and not IsEntityDead(vehicle) then
                 SetVehicleUndriveable(vehicle, false)
             end
         end

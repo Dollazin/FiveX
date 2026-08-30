@@ -3,8 +3,9 @@
 #include "../../Core/Storage/FileIO.h"
 #include "../../Core/Storage/Paths.h"
 #include "../../Core/Config/NumberFormat.h"
+#include "../../Core/Config/AutoStart.h"
 #include "../../Core/UI/Notification.h"
-#include "../../GameNatives.h"
+#include "../../CoreNatives.h"
 
 extern "C" {
 #include "../../ThirdParty/Lua54/lua.h"
@@ -19,7 +20,7 @@ extern "C" {
 #include <stdlib.h>
 #include <string.h>
 
-#define FIVEX_LUA_MAX_RESOURCES 16
+#define FIVEX_LUA_MAX_RESOURCES 64
 #define FIVEX_LUA_MAX_SCRIPTS 32
 #define FIVEX_LUA_MAX_DEPENDENCIES 12
 #define FIVEX_LUA_MAX_THREADS 64
@@ -90,10 +91,10 @@ enum FiveXLuaNativeReturnType {
 struct FiveXLuaNativeEntry {
 	const CHAR* Name;
 	DWORD Hash;
-	FiveXLuaNativeReturnType ReturnType;
+	BYTE ReturnType;
 	BYTE NativeArgumentCount;
 	BYTE LuaArgumentCount;
-	FiveXLuaNativeArgumentType Arguments[24];
+	BYTE Arguments[24];
 };
 
 union FiveXLuaNativePointerStorage {
@@ -137,7 +138,10 @@ struct FiveXLuaPendingAction {
 	FiveXLuaPendingActionType Type;
 };
 
-static FiveXLuaResource g_resources[FIVEX_LUA_MAX_RESOURCES];
+// Keeping 64 complete resource slots in .bss inflates the XEX image by more
+// than 1 MiB. Some RGH plugin loaders reject that image before FiveXEntry is
+// reached. Allocate the table after the game and XAPI heap are ready instead.
+static FiveXLuaResource* g_resources;
 static INT g_resourceCount;
 static BOOL g_initialized;
 static BOOL g_ticking;
@@ -282,10 +286,30 @@ static BOOL HasWildcard(const CHAR* path) {
 	return path && (strchr(path, '*') != NULL || strchr(path, '?') != NULL);
 }
 
-static BOOL IsSafeRelativePath(const CHAR* path) {
-	if (!path || !path[0] || strstr(path, "..") || strchr(path, ':'))
+static BOOL NormalizeRelativePath(const CHAR* path, CHAR* output, DWORD outputSize) {
+	if (!path || !path[0] || !output || outputSize < 2 ||
+		strstr(path, "..") || strchr(path, ':') ||
+		path[0] == '/' || path[0] == '\\')
 		return FALSE;
-	return strlen(path) < FIVEX_MAX_PATH;
+
+	DWORD outputLength = 0;
+	for (DWORD index = 0; path[index]; ++index) {
+		CHAR value = path[index];
+		if ((UCHAR)value < 32)
+			return FALSE;
+		if (value == '/' || value == '\\') {
+			if (!outputLength || output[outputLength - 1] == '\\')
+				return FALSE;
+			value = '\\';
+		}
+		if (outputLength + 1 >= outputSize)
+			return FALSE;
+		output[outputLength++] = value;
+	}
+	if (!outputLength || output[outputLength - 1] == '\\')
+		return FALSE;
+	output[outputLength] = '\0';
+	return TRUE;
 }
 
 static BOOL AddManifestScript(const CHAR* script) {
@@ -312,21 +336,24 @@ static BOOL AddManifestScript(const CHAR* script) {
 			return FALSE;
 		memcpy(resourceName, script + 1, resourceLength);
 		resourceName[resourceLength] = '\0';
+		CHAR normalizedScript[FIVEX_MAX_PATH];
 		FiveXLuaResource* source = FindResource(resourceName);
-		if (!source || !IsSafeRelativePath(slash + 1))
+		if (!source || !NormalizeRelativePath(
+			slash + 1, normalizedScript, sizeof(normalizedScript)))
 			return FALSE;
 		const INT scriptIndex = g_manifestResource->Info.ScriptCount;
 		if (FiveXPathBuild(g_manifestResource->Scripts[scriptIndex],
-			FIVEX_MAX_PATH, source->Root, slash + 1) != FiveXFileOk)
+			FIVEX_MAX_PATH, source->Root, normalizedScript) != FiveXFileOk)
 			return FALSE;
 		++g_manifestResource->Info.ScriptCount;
 		return TRUE;
 	}
-	if (!IsSafeRelativePath(script))
+	CHAR normalizedScript[FIVEX_MAX_PATH];
+	if (!NormalizeRelativePath(script, normalizedScript, sizeof(normalizedScript)))
 		return FALSE;
 	const INT scriptIndex = g_manifestResource->Info.ScriptCount;
 	if (FiveXPathBuild(g_manifestResource->Scripts[scriptIndex],
-		FIVEX_MAX_PATH, g_manifestResource->Root, script) != FiveXFileOk)
+		FIVEX_MAX_PATH, g_manifestResource->Root, normalizedScript) != FiveXFileOk)
 		return FALSE;
 	++g_manifestResource->Info.ScriptCount;
 	return TRUE;
@@ -887,7 +914,7 @@ static VOID RegisterExports(lua_State* state, FiveXLuaResource* resource) {
 }
 
 static INT PushNativeResult(lua_State* state, FiveXNativeContext* context,
-	FiveXLuaNativeReturnType returnType) {
+	BYTE returnType) {
 	switch (returnType) {
 	case FiveXLuaNativeReturnVoid:
 		return 0;
@@ -936,7 +963,7 @@ static INT PushNativeResult(lua_State* state, FiveXNativeContext* context,
 	}
 }
 
-static BOOL IsCatalogOutputPointer(FiveXLuaNativeArgumentType type) {
+static BOOL IsCatalogOutputPointer(BYTE type) {
 	return type == FiveXLuaNativeArgumentPointerOutInteger ||
 		type == FiveXLuaNativeArgumentPointerOutFloat ||
 		type == FiveXLuaNativeArgumentPointerOutBoolean ||
@@ -988,7 +1015,7 @@ static BOOL ValidatePointerInputHandle(lua_State* state,
 
 static BOOL PushCatalogArgument(lua_State* state, FiveXNativeContext* context,
 	INT* luaIndex, const FiveXLuaNativeEntry* entry, INT nativeArgumentIndex,
-	FiveXLuaNativeArgumentType type,
+	BYTE type,
 	FiveXLuaNativePointerStorage* storage) {
 	if (!luaIndex || !entry || !storage)
 		return FALSE;
@@ -1052,7 +1079,7 @@ static BOOL PushCatalogArgument(lua_State* state, FiveXNativeContext* context,
 }
 
 static INT PushCatalogPointerResult(lua_State* state,
-	FiveXLuaNativeArgumentType type,
+	BYTE type,
 	const FiveXLuaNativePointerStorage* storage) {
 	if (!storage)
 		return 0;
@@ -1237,13 +1264,48 @@ static INT LuaInvokeNative(lua_State* state) {
 	return resultCount;
 }
 
-static VOID RegisterNativeCatalog(lua_State* state, FiveXLuaResource* resource) {
+static const FiveXLuaNativeEntry* NativeEntryFromName(const CHAR* name) {
+	if (!name)
+		return NULL;
 	for (DWORD index = 0; index < ARRAYSIZE(g_luaNativeCatalog); ++index) {
-		lua_pushlightuserdata(state, resource);
-		lua_pushlightuserdata(state, (VOID*)&g_luaNativeCatalog[index]);
-		lua_pushcclosure(state, LuaInvokeCatalogNative, 2);
-		lua_setglobal(state, g_luaNativeCatalog[index].Name);
+		if (_stricmp(g_luaNativeCatalog[index].Name, name) == 0)
+			return &g_luaNativeCatalog[index];
 	}
+	return NULL;
+}
+
+static INT LuaResolveCatalogNative(lua_State* state) {
+	FiveXLuaResource* resource = (FiveXLuaResource*)
+		lua_touserdata(state, lua_upvalueindex(1));
+	const CHAR* name = lua_tostring(state, 2);
+	const FiveXLuaNativeEntry* entry = NativeEntryFromName(name);
+	if (!resource || !entry || !FiveXNativeAvailable(entry->Hash)) {
+		lua_pushnil(state);
+		return 1;
+	}
+
+	// Cache only natives actually requested by this resource. Keeping the
+	// 4,905-entry catalog in C++ while avoiding 4,905 Lua closures per state
+	// dramatically reduces the fixed heap cost of every resource.
+	lua_pushlightuserdata(state, resource);
+	lua_pushlightuserdata(state, (VOID*)entry);
+	lua_pushcclosure(state, LuaInvokeCatalogNative, 2);
+	lua_pushvalue(state, 2);
+	lua_pushvalue(state, -2);
+	lua_rawset(state, 1);
+	return 1;
+}
+
+static VOID InstallNativeCatalogResolver(lua_State* state,
+	FiveXLuaResource* resource) {
+	lua_pushglobaltable(state);
+	if (!lua_getmetatable(state, -1))
+		lua_newtable(state);
+	lua_pushlightuserdata(state, resource);
+	lua_pushcclosure(state, LuaResolveCatalogNative, 1);
+	lua_setfield(state, -2, "__index");
+	lua_setmetatable(state, -2);
+	lua_pop(state, 1);
 }
 
 static Entity CheckExistingEntity(lua_State* state, INT index, const CHAR* nativeName) {
@@ -1324,11 +1386,15 @@ static INT LuaGetBlipInfoIdCoord(lua_State* state) {
 	return 1;
 }
 static INT LuaGetGroundZFor3dCoord(lua_State* state) {
-	RequireLuaArgumentCount(state, "GetGroundZFor3dCoord", 3, 3);
+	RequireLuaArgumentCount(state, "GetGroundZFor3dCoord", 3, 4);
 	FLOAT groundZ = 0.0f;
 	const FLOAT x = CheckNativeFloat(state, 1, "GetGroundZFor3dCoord");
 	const FLOAT y = CheckNativeFloat(state, 2, "GetGroundZFor3dCoord");
 	const FLOAT z = CheckNativeFloat(state, 3, "GetGroundZFor3dCoord");
+	// FiveM exposes includeWater as the fourth Lua argument. The Xbox native
+	// does not have this flag, so validate it for API compatibility and ignore it.
+	if (lua_gettop(state) >= 4)
+		CheckNativeBoolean(state, 4, "GetGroundZFor3dCoord");
 	BOOL found = GetGroundZFor3dCoord2(
 		x, y, z, &groundZ);
 	lua_pushboolean(state, found);
@@ -1336,12 +1402,20 @@ static INT LuaGetGroundZFor3dCoord(lua_State* state) {
 	return 2;
 }
 static INT LuaSetEntityCoords(lua_State* state) {
-	RequireLuaArgumentCount(state, "SetEntityCoords", 4, 4);
+	RequireLuaArgumentCount(state, "SetEntityCoords", 4, 8);
 	const Entity entity = CheckExistingEntity(state, 1, "SetEntityCoords");
 	const FLOAT x = CheckNativeFloat(state, 2, "SetEntityCoords");
 	const FLOAT y = CheckNativeFloat(state, 3, "SetEntityCoords");
 	const FLOAT z = CheckNativeFloat(state, 4, "SetEntityCoords");
-	SetEntityCoords(entity, x, y, z, FALSE, FALSE, FALSE, FALSE);
+	const BOOL alive = lua_gettop(state) >= 5 ?
+		CheckNativeBoolean(state, 5, "SetEntityCoords") : FALSE;
+	const BOOL deadFlag = lua_gettop(state) >= 6 ?
+		CheckNativeBoolean(state, 6, "SetEntityCoords") : FALSE;
+	const BOOL ragdollFlag = lua_gettop(state) >= 7 ?
+		CheckNativeBoolean(state, 7, "SetEntityCoords") : FALSE;
+	const BOOL clearArea = lua_gettop(state) >= 8 ?
+		CheckNativeBoolean(state, 8, "SetEntityCoords") : FALSE;
+	SetEntityCoords(entity, x, y, z, alive, deadFlag, ragdollFlag, clearArea);
 	return 0;
 }
 static INT LuaGetHashKey(lua_State* state) {
@@ -1393,11 +1467,26 @@ static INT LuaDeleteEntity(lua_State* state) {
 	return 0;
 }
 static INT LuaSetVehicleEngineOn(lua_State* state) {
-	RequireLuaArgumentCount(state, "SetVehicleEngineOn", 3, 3);
+	RequireLuaArgumentCount(state, "SetVehicleEngineOn", 3, 4);
 	const Vehicle vehicle = (Vehicle)CheckExistingEntity(state, 1, "SetVehicleEngineOn");
+	const BOOL engineState = CheckNativeBoolean(state, 2, "SetVehicleEngineOn");
+	const BOOL instantly = CheckNativeBoolean(state, 3, "SetVehicleEngineOn");
+	// FiveM added disableAutoStart as argument four. It has no equivalent in
+	// this Xbox native, but accepting it keeps client resources source-compatible.
+	if (lua_gettop(state) >= 4)
+		CheckNativeBoolean(state, 4, "SetVehicleEngineOn");
 	SetVehicleEngineOn(vehicle,
-		CheckNativeBoolean(state, 2, "SetVehicleEngineOn"),
-		CheckNativeBoolean(state, 3, "SetVehicleEngineOn"));
+		engineState,
+		instantly);
+	return 0;
+}
+static INT LuaSetTextDropshadow(lua_State* state) {
+	RequireLuaArgumentCount(state, "SetTextDropshadow", 5, 5);
+	for (INT index = 1; index <= 5; ++index)
+		CheckNativeDword(state, index, "SetTextDropshadow");
+	// The Xbox 360 build exposes the legacy zero-argument shadow toggle at a
+	// different hash. Calling the FiveM five-argument handler is unsafe here.
+	SetTextDropShadow();
 	return 0;
 }
 static INT LuaIsControlJustPressed(lua_State* state) {
@@ -1438,7 +1527,7 @@ static VOID OpenResourceLibraries(lua_State* state) {
 static VOID RegisterResourceApi(FiveXLuaResource* resource) {
 	lua_State* state = resource->State;
 	RegisterVector3(state);
-	RegisterNativeCatalog(state, resource);
+	InstallNativeCatalogResolver(state, resource);
 	lua_pushcfunction(state, LuaPrint); lua_setglobal(state, "print");
 	RegisterResourceFunction(state, resource, "CreateThread", LuaCreateThread);
 	RegisterResourceFunction(state, resource, "Wait", LuaWait);
@@ -1470,6 +1559,7 @@ static VOID RegisterResourceApi(FiveXLuaResource* resource) {
 	RegisterResourceFunction(state, resource, "CreateVehicle", LuaCreateVehicle);
 	RegisterResourceFunction(state, resource, "DeleteEntity", LuaDeleteEntity);
 	RegisterResourceFunction(state, resource, "SetVehicleEngineOn", LuaSetVehicleEngineOn);
+	RegisterResourceFunction(state, resource, "SetTextDropshadow", LuaSetTextDropshadow);
 	RegisterResourceFunction(state, resource, "IsControlJustPressed", LuaIsControlJustPressed);
 	RegisterExports(state, resource);
 
@@ -1643,8 +1733,9 @@ static BOOL StartResourceInternal(FiveXLuaResource* resource, INT depth) {
 	DispatchEvent(resource->State, "onResourceStart", -1, 1, resource);
 	lua_pop(resource->State, 1);
 	ResumeResourceThreads(resource);
-	DbgPrint("[FiveX][Lua] Resource started: %s scripts=%d\n",
-		resource->Info.Name, resource->Info.ScriptCount);
+	DbgPrint("[FiveX][Lua] Resource started: %s scripts=%d memory=%lu KB\n",
+		resource->Info.Name, resource->Info.ScriptCount,
+		(DWORD)((resource->Allocator.Used + 1023) / 1024));
 	Notify::Success("Lua resource started: %s", resource->Info.Name);
 	return TRUE;
 }
@@ -1722,8 +1813,23 @@ static BOOL DiscoverResource(const CHAR* fileName, DWORD attributes, PVOID conte
 			return TRUE;
 		}
 	}
+	resource->Info.AutoStart = FiveXAutoStartContains(fileName);
 	resource->FoundDuringRefresh = TRUE;
 	return TRUE;
+}
+
+static VOID StartAutoStartResources() {
+	for (INT index = 0; index < g_resourceCount; ++index) {
+		FiveXLuaResource* resource = &g_resources[index];
+		if (!resource->Catalogued || !resource->Info.AutoStart ||
+			resource->Info.State != FiveXLuaResourceStopped)
+			continue;
+		DbgPrint("[FiveX][AutoStart] Starting resource: %s\n",
+			resource->Info.Name);
+		if (!StartResourceInternal(resource, 0))
+			DbgPrint("[FiveX][AutoStart] Failed to start resource: %s\n",
+				resource->Info.Name);
+	}
 }
 
 VOID FiveXLuaResourceRefresh() {
@@ -1762,13 +1868,25 @@ VOID FiveXLuaResourceRefresh() {
 BOOL FiveXLuaRuntimeInitialize() {
 	if (g_initialized)
 		return TRUE;
-	ZeroMemory(g_resources, sizeof(g_resources));
+	if (!g_resources) {
+		g_resources = (FiveXLuaResource*)malloc(
+			sizeof(FiveXLuaResource) * FIVEX_LUA_MAX_RESOURCES);
+		if (!g_resources) {
+			DbgPrint("[FiveX][Lua] Unable to allocate resource table.\n");
+			return FALSE;
+		}
+	}
+	ZeroMemory(g_resources,
+		sizeof(FiveXLuaResource) * FIVEX_LUA_MAX_RESOURCES);
 	g_resourceCount = 0;
 	g_pendingActionCount = 0;
 	g_ticking = FALSE;
 	g_initialized = TRUE;
 	FiveXEnsureDirectory(FiveXPathResources());
 	FiveXLuaResourceRefresh();
+	// FiveXLuaRuntimeInitialize is reached only after COMBINED_READY remained
+	// stable in LoopScheduler. Auto-start never runs during the early boot scan.
+	StartAutoStartResources();
 	DbgPrint("[FiveX][Lua] Runtime initialized. Version=%s\n", LUA_RELEASE);
 	return TRUE;
 }
@@ -1802,12 +1920,15 @@ VOID FiveXLuaRuntimeTick() {
 }
 
 VOID FiveXLuaRuntimeShutdown() {
-	if (!g_initialized)
-		return;
-	FiveXLuaResourceStopAll();
+	if (g_initialized)
+		FiveXLuaResourceStopAll();
 	g_resourceCount = 0;
 	g_pendingActionCount = 0;
 	g_initialized = FALSE;
+	if (g_resources) {
+		free(g_resources);
+		g_resources = NULL;
+	}
 	DbgPrint("[FiveX][Lua] Runtime shutdown completed.\n");
 }
 
@@ -1866,6 +1987,15 @@ BOOL FiveXLuaResourceRestart(const CHAR* name) {
 		return FALSE;
 	StopResourceInternal(resource);
 	return StartResourceInternal(resource, 0);
+}
+
+BOOL FiveXLuaResourceSetAutoStart(const CHAR* name, BOOL enabled) {
+	FiveXLuaResource* resource = FindResource(name);
+	if (!resource || !FiveXAutoStartSet(name, enabled))
+		return FALSE;
+	resource->Info.AutoStart = enabled;
+	DbgPrint("[FiveX][AutoStart] Resource %s enabled=%d\n", name, enabled);
+	return TRUE;
 }
 
 VOID FiveXLuaResourceStopAll() {

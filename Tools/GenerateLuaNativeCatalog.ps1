@@ -1,6 +1,5 @@
 param(
-    [string]$InputPath = (Join-Path $PSScriptRoot "..\GameNatives.h"),
-    [string]$MetadataPath = (Join-Path $PSScriptRoot "NativeMetadata\natives.json"),
+    [string]$MetadataPath = (Join-Path $PSScriptRoot "NativeMetadata\natives_fivem.json"),
     [string]$OutputPath = (Join-Path $PSScriptRoot "..\Runtime\Lua\LuaNativeCatalog.inl"),
     [string]$ReportPath = (Join-Path $PSScriptRoot "..\Runtime\Lua\LuaNativeCatalogReport.txt")
 )
@@ -47,11 +46,6 @@ function Get-LuaReturnKind([string]$type, [bool]$allowAny) {
     return $null
 }
 
-function Get-SourceArgumentType([string]$declaration) {
-    $declaration = $declaration.Trim()
-    return ($declaration -replace '\s+[A-Za-z_]\w*\s*$', '').Trim()
-}
-
 function Test-OutputPointerKind([string]$kind) {
     return $kind -eq 'FiveXLuaNativeArgumentPointerNull' -or
         $kind -match '^FiveXLuaNativeArgumentPointerOut'
@@ -65,20 +59,27 @@ function New-CatalogEntry([string]$name, [string]$hash,
         $name, $hash, $returnKind, $argumentKinds.Count, $luaArgumentCount, $arguments)
 }
 
-if (-not (Test-Path -LiteralPath $InputPath)) { throw "Game native header not found: $InputPath" }
 if (-not (Test-Path -LiteralPath $MetadataPath)) { throw "Native metadata not found: $MetadataPath" }
 
-$metadata = Get-Content -LiteralPath $MetadataPath -Raw | ConvertFrom-Json
+$metadataJson = Get-Content -LiteralPath $MetadataPath -Raw
+if ($PSVersionTable.PSVersion.Major -ge 6) {
+    $metadata = $metadataJson | ConvertFrom-Json -AsHashtable
+} else {
+    Add-Type -AssemblyName System.Web.Extensions
+    $jsonSerializer = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+    $jsonSerializer.MaxJsonLength = [Int32]::MaxValue
+    $metadata = $jsonSerializer.DeserializeObject($metadataJson)
+}
 $metadataByJhash = @{}
-foreach ($namespace in $metadata.PSObject.Properties) {
-    foreach ($native in $namespace.Value.PSObject.Properties) {
-        $definition = $native.Value
+foreach ($namespaceName in $metadata.Keys) {
+    foreach ($nativeHash in $metadata[$namespaceName].Keys) {
+        $definition = $metadata[$namespaceName][$nativeHash]
         if (-not $definition.jhash) { continue }
         $key = ([string]$definition.jhash).ToUpperInvariant()
-        if ($metadataByJhash.ContainsKey($key)) { throw "Duplicate jhash $key in natives.json" }
+        if ($metadataByJhash.ContainsKey($key)) { continue }
         $metadataByJhash[$key] = [PSCustomObject]@{
-            Namespace = $namespace.Name
-            Hash64 = $native.Name
+            Namespace = $namespaceName
+            Hash64 = $nativeHash
             Definition = $definition
         }
     }
@@ -142,83 +143,66 @@ function Get-PointerArgumentKind([string]$type, [string]$nativeName) {
 
 $primaryEntries = New-Object System.Collections.Generic.List[object]
 $aliasCandidates = New-Object System.Collections.Generic.List[object]
-$seenSourceNames = @{}
-$sourceCount = 0
-$matchedCount = 0
-$metadataSafeCount = 0
-$fallbackSafeCount = 0
+$metadataJhashCount = $metadataByJhash.Count
+$safeNativeCount = 0
 $pointerSkippedCount = 0
 $pointerSafeCount = 0
 $unsupportedSkippedCount = 0
-$unmatchedCount = 0
 $tooManyArgumentsCount = 0
 
-foreach ($line in Get-Content -LiteralPath $InputPath) {
-    if ($line -notmatch '^inline\s+(.+?)\s+([A-Za-z_]\w*)\((.*?)\)\s*\{(.*)\}\s*(?://.*)?$') { continue }
-
-    $sourceCount++
-    $sourceReturnType = $Matches[1]
-    $sourceName = $Matches[2]
-    $sourceArgumentList = $Matches[3]
-    $body = $Matches[4]
-    if ($seenSourceNames.ContainsKey($sourceName) -or $body -notmatch '0x[0-9A-Fa-f]{8}') { continue }
-    $seenSourceNames[$sourceName] = $true
-    $hash = $Matches[0].ToUpperInvariant().Replace('X', 'x')
-    $metadataEntry = $metadataByJhash[$hash.ToUpperInvariant()]
+# Build the Lua catalog directly from official FiveM definitions that expose a
+# legacy 32-bit Xbox jhash. Typed C++ wrappers are deliberately not parsed:
+# core code and resource-facing Lua bindings are independent.
+foreach ($metadataKey in @($metadataByJhash.Keys | Sort-Object)) {
+    $metadataEntry = $metadataByJhash[$metadataKey]
+    $definition = $metadataEntry.Definition
+    $metadataReturnType = if ($definition.return_type) {
+        [string]$definition.return_type
+    } else {
+        [string]$definition.results
+    }
+    $returnKind = Get-LuaReturnKind $metadataReturnType $true
     $argumentKinds = New-Object System.Collections.Generic.List[string]
-    $returnKind = $null
-    $modernName = $null
     $valid = $true
     $hasPointer = $false
     $pointerSupported = $true
 
-    if ($metadataEntry) {
-        $matchedCount++
-        $definition = $metadataEntry.Definition
-        $returnKind = Get-LuaReturnKind ([string]$definition.return_type) $true
-        if ([string]$definition.return_type -match '\*' -and
-            [string]$definition.return_type -notmatch '^(const\s+)?char\s*\*$') { $hasPointer = $true }
-        foreach ($argument in $definition.params) {
-            $argumentType = [string]$argument.type
-            if ($argumentType -match '\*' -and $argumentType -notmatch '^(const\s+)?char\s*\*$') {
-                $hasPointer = $true
-                $kind = Get-PointerArgumentKind $argumentType ([string]$definition.name)
-                if (-not $kind) { $pointerSupported = $false }
-            } else {
-                $kind = Get-LuaArgumentKind $argumentType $true
-            }
-            if (-not $kind) { $valid = $false; break }
-            $argumentKinds.Add($kind)
+    if ($metadataReturnType -match '\*' -and
+        $metadataReturnType -notmatch '^(const\s+)?char\s*\*$') { $hasPointer = $true }
+    foreach ($argument in $definition.params) {
+        $argumentType = [string]$argument.type
+        if ($argumentType -match '\*' -and $argumentType -notmatch '^(const\s+)?char\s*\*$') {
+            $hasPointer = $true
+            $kind = Get-PointerArgumentKind $argumentType ([string]$definition.name)
+            if (-not $kind) { $pointerSupported = $false }
+        } else {
+            $kind = Get-LuaArgumentKind $argumentType $true
         }
-        $modernName = Convert-ToLuaNativeName ([string]$definition.name)
-        if ($hasPointer -and -not $pointerSupported) { $pointerSkippedCount++; continue }
-        if ($hasPointer) { $pointerSafeCount++ }
-    } else {
-        $unmatchedCount++
-        $returnKind = Get-LuaReturnKind $sourceReturnType $false
-        if ($sourceArgumentList.Trim()) {
-            foreach ($argument in $sourceArgumentList.Split(',')) {
-                $kind = Get-LuaArgumentKind (Get-SourceArgumentType $argument) $false
-                if (-not $kind) { $valid = $false; break }
-                $argumentKinds.Add($kind)
-            }
-        }
+        if (-not $kind) { $valid = $false; break }
+        $argumentKinds.Add($kind)
     }
 
+    if ($hasPointer -and -not $pointerSupported) { $pointerSkippedCount++; continue }
     if (-not $valid -or -not $returnKind) { $unsupportedSkippedCount++; continue }
     if ($argumentKinds.Count -gt 24) { $tooManyArgumentsCount++; continue }
 
-    $entry = [PSCustomObject]@{
-        Name = $sourceName
+    $modernName = Convert-ToLuaNativeName ([string]$definition.name)
+    if (-not $modernName) { $unsupportedSkippedCount++; continue }
+    $hash = $metadataKey.ToUpperInvariant().Replace('X', 'x')
+    $primaryEntries.Add([PSCustomObject]@{
+        Name = $modernName
         Hash = $hash
         ReturnKind = $returnKind
         ArgumentKinds = $argumentKinds
-    }
-    $primaryEntries.Add($entry)
-    if ($metadataEntry) { $metadataSafeCount++ } else { $fallbackSafeCount++ }
-    if ($modernName -and $modernName -ne $sourceName) {
+    })
+    $safeNativeCount++
+    if ($hasPointer) { $pointerSafeCount++ }
+
+    foreach ($metadataAlias in @($definition.aliases)) {
+        $aliasName = Convert-ToLuaNativeName ([string]$metadataAlias)
+        if (-not $aliasName -or $aliasName -eq $modernName) { continue }
         $aliasCandidates.Add([PSCustomObject]@{
-            Name = $modernName
+            Name = $aliasName
             Hash = $hash
             ReturnKind = $returnKind
             ArgumentKinds = $argumentKinds
@@ -227,7 +211,8 @@ foreach ($line in Get-Content -LiteralPath $InputPath) {
 }
 
 $catalogLines = New-Object System.Collections.Generic.List[string]
-$catalogNames = @{}
+$catalogNames = [System.Collections.Generic.Dictionary[string, string]]::new(
+    [System.StringComparer]::Ordinal)
 foreach ($entry in $primaryEntries) {
     if ($catalogNames.ContainsKey($entry.Name)) { continue }
     $catalogNames[$entry.Name] = $entry.Hash
@@ -248,10 +233,12 @@ foreach ($entry in $aliasCandidates) {
 
 $header = @(
     '// Generated by Tools/GenerateLuaNativeCatalog.ps1.',
-    '// Xbox hashes come from GameNatives.h; signatures and modern names come from natives.json jhash matches.',
+    '// FiveM signatures and names come from natives_fivem.json; calls use legacy 32-bit Xbox jhash values.',
+    '// The catalog is independent from the typed wrappers used by the C++ core.',
+    '// Every candidate is filtered by the Xbox native registration table at runtime.',
     '// Safe scalar/output pointers are converted to Lua values; arrays and arbitrary pointers remain excluded.',
-    ('// Source natives: {0}; metadata matches: {1}; callable entries: {2}; modern aliases: {3}; pointer natives: {4}.' -f
-        $sourceCount, $matchedCount, $catalogLines.Count, $aliasCount, $pointerSafeCount),
+    ('// Metadata jhashes: {0}; safe natives: {1}; callable entries: {2}; aliases: {3}; pointer natives: {4}.' -f
+        $metadataJhashCount, $safeNativeCount, $catalogLines.Count, $aliasCount, $pointerSafeCount),
     ''
 )
 [System.IO.File]::WriteAllText($OutputPath, (($header + $catalogLines) -join "`r`n") + "`r`n",
@@ -261,12 +248,9 @@ $report = @(
     'FiveX Lua native catalog report',
     ('Generated: {0:u}' -f [DateTime]::UtcNow),
     '',
-    ('Source natives: {0}' -f $sourceCount),
-    ('Matched to natives.json by jhash: {0}' -f $matchedCount),
-    ('Unmatched source natives: {0}' -f $unmatchedCount),
-    ('Safe matched natives: {0}' -f $metadataSafeCount),
-    ('Safe unmatched fallback natives: {0}' -f $fallbackSafeCount),
-    ('Modern FiveM-style aliases added: {0}' -f $aliasCount),
+    ('Official metadata entries with Xbox jhash: {0}' -f $metadataJhashCount),
+    ('Safe metadata natives added: {0}' -f $safeNativeCount),
+    ('Official aliases added: {0}' -f $aliasCount),
     ('Final callable Lua globals: {0}' -f $catalogLines.Count),
     ('Safe pointer natives added: {0}' -f $pointerSafeCount),
     ('Pointer signatures skipped: {0}' -f $pointerSkippedCount),
@@ -274,10 +258,12 @@ $report = @(
     ('Signatures over 24 arguments skipped: {0}' -f $tooManyArgumentsCount),
     ('Alias name conflicts skipped: {0}' -f $aliasConflictCount),
     '',
-    'Hashes from the 64-bit PC field are not emitted. Only 32-bit Xbox hashes already present in GameNatives.h are used.'
+    'Typed C++ wrapper headers are not inputs to this generator.',
+    'Hashes from the 64-bit PC field are not emitted. Only legacy 32-bit Xbox jhash values are used.',
+    'Candidates not present in the running Xbox native registration table are not exposed to Lua.'
 )
 [System.IO.File]::WriteAllText($ReportPath, ($report -join "`r`n") + "`r`n",
     (New-Object System.Text.UTF8Encoding($false)))
 
-Write-Host ("FiveX Lua native catalog: {0} callable globals ({1} modern aliases, {2} pointer natives, {3} unsafe pointers skipped) -> {4}" -f
+Write-Host ("FiveX Lua native catalog: {0} callable globals ({1} official aliases, {2} pointer natives, {3} unsafe pointers skipped) -> {4}" -f
     $catalogLines.Count, $aliasCount, $pointerSafeCount, $pointerSkippedCount, $OutputPath)

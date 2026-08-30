@@ -1,7 +1,7 @@
 #include "FiveXMenu.h"
 #include "Runtime/Lua/LuaRuntime.h"
 #include "Core/Input/Input.h"
-#include "GameNatives.h"
+#include "CoreNatives.h"
 #include <stdio.h>
 
 #define FIVEX_MENU_VISIBLE_RESOURCES 8
@@ -41,7 +41,8 @@ VOID FiveXMenuShutdown() {
 
 VOID FiveXMenuTick() {
 	const WORD openButtons = XINPUT_GAMEPAD_RIGHT_SHOULDER | XINPUT_GAMEPAD_X;
-	if (FiveXInputPressed(openButtons))
+	const BOOL menuToggled = FiveXInputPressed(openButtons);
+	if (menuToggled)
 		g_open = !g_open;
 	if (!g_open)
 		return;
@@ -56,7 +57,9 @@ VOID FiveXMenuTick() {
 	if (g_selected > count)
 		g_selected = count;
 
-	DrawRect(0.5f, 0.465f, 0.46f, 0.385f, 8, 8, 12, 210);
+	const FLOAT panelCenterY = 0.465f;
+	const FLOAT panelHeight = 0.385f;
+	DrawRect(0.5f, panelCenterY, 0.46f, panelHeight, 8, 8, 12, 210);
 	DrawRect(0.5f, 0.25f, 0.46f, 0.05f, 18, 18, 24, 245);
 	Text("FIVEX | LUA RESOURCES", 0.285f, 0.235f, 0.42f);
 
@@ -89,25 +92,36 @@ VOID FiveXMenuTick() {
 			const FLOAT y = 0.325f + (index - firstResource) * 0.032f;
 			if (selected)
 				DrawRect(0.5f, y + 0.013f, 0.46f, 0.031f, 55, 80, 120, 210);
-			sprintf_s(line, sizeof(line), "%c %s  [%s]",
+			sprintf_s(line, sizeof(line), "%c %s  [%s~s~]%s",
 				selected ? '>' : ' ', resource->Name,
-				FiveXLuaResourceStateText(index));
+				FiveXLuaResourceStateText(index),
+				resource->AutoStart ? " ~y~[AUTO-START]~s~" : "");
 			Text(line, 0.285f, y, 0.30f);
 		}
 	}
 
-	const FLOAT footerY = 0.635f;
-	DrawRect(0.5f, footerY + 0.013f, 0.46f, 0.035f, 10, 10, 14, 220);
+	const FLOAT footerHeight = 0.035f;
+	const FLOAT panelBottom = panelCenterY + (panelHeight * 0.5f);
+	const FLOAT footerCenterY = panelBottom - (footerHeight * 0.5f);
+	const FLOAT footerY = footerCenterY - 0.013f;
+	DrawRect(0.5f, footerCenterY, 0.46f, footerHeight, 10, 10, 14, 220);
 	if (g_selected == 0)
 		Text("A: REFRESH RESOURCE FOLDERS", 0.285f, footerY, 0.29f);
-	else
-		Text(ResourceAction(FiveXLuaResourceGet(g_selected - 1)),
-			0.285f, footerY, 0.29f);
+	else {
+		sprintf_s(line, sizeof(line), "%s | X: TOGGLE AUTO-START",
+			ResourceAction(FiveXLuaResourceGet(g_selected - 1)));
+		Text(line, 0.285f, footerY, 0.27f);
+	}
 
 	if (FiveXInputPressedOrRepeated(XINPUT_GAMEPAD_DPAD_UP, 350, 70))
 		g_selected = g_selected > 0 ? g_selected - 1 : count;
 	if (FiveXInputPressedOrRepeated(XINPUT_GAMEPAD_DPAD_DOWN, 350, 70))
 		g_selected = g_selected < count ? g_selected + 1 : 0;
+	if (!menuToggled && g_selected > 0 && FiveXInputPressed(XINPUT_GAMEPAD_X)) {
+		const FiveXLuaResourceInfo* resource = FiveXLuaResourceGet(g_selected - 1);
+		if (resource)
+			FiveXLuaResourceSetAutoStart(resource->Name, !resource->AutoStart);
+	}
 	if (FiveXInputPressed(XINPUT_GAMEPAD_A)) {
 		if (!g_selected) {
 			FiveXLuaResourceRefresh();

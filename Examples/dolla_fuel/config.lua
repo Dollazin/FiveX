@@ -13,16 +13,41 @@ Config.RefuelRate = 1.2 -- percentual por segundo
 Config.ConsumptionInterval = 1000
 Config.ShowStationBlips = true
 
--- HUD de combustivel posicionada ao lado direito do minimapa.
+-- HUD de combustivel. Position usa o canto superior esquerdo; estes valores
+-- preservam exatamente a area anterior, que usava X/Y como centro.
 Config.Hud = {
     Enabled = true,
-    X = 0.292,
-    Y = 0.920,
-    Width = 0.140,
-    Height = 0.054,
-    TextScale = 0.45,
-    TextOffsetY = -0.020,
-    BarOffsetY = 0.019
+    Position = {
+        x = 0.222,
+        y = 0.893
+    },
+    Size = {
+        width = 0.140,
+        height = 0.054
+    },
+    Icon = {
+        dictionary = 'commonmenu',
+        name = 'shop_garage_icon_a',
+        fallback = 'I',
+        width = 0.013,
+        height = 0.027
+    },
+    Text = {
+        value = 0,
+        font = 4,
+        scale = 0.45,
+        suffix = '%'
+    },
+    Colors = {
+        background = { 2, 8, 9, 235 },
+        border = { 0, 235, 220, 230 },
+        glow = { 0, 255, 235, 35 },
+        shadow = { 0, 0, 0, 180 },
+        emptyBlock = { 0, 46, 38, 210 },
+        filledBlock = { 0, 239, 111, 255 },
+        text = { 255, 255, 255, 255 },
+        icon = { 255, 255, 255, 255 }
+    }
 }
 
 Config.PumpModels = {

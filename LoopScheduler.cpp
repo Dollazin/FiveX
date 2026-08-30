@@ -2,7 +2,7 @@
 #include "Core/Global.h"
 #include "Lifecycle.h"
 #include "FiveXRuntime.h"
-#include "GameNatives.h"
+#include "CoreNatives.h"
 
 struct FiveXLoopSlot {
 	FiveXLoopEntry Entry;

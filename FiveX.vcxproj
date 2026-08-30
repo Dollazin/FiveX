@@ -37,6 +37,8 @@
     <Link>
       <AdditionalDependencies>xapilib.lib;xboxkrnl.lib;libcmt.lib</AdditionalDependencies>
       <AdditionalOptions>/dll /entry:"FiveXEntry" /ALIGN:128,4096 /NODEFAULTLIB %(AdditionalOptions)</AdditionalOptions>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapFileName>$(OutDir)FiveX.map</MapFileName>
     </Link>
     <ImageXex>
       <ConfigurationFile>FiveX.xml</ConfigurationFile>
@@ -57,6 +59,7 @@
     <ClCompile Include="Paths.cpp" />
     <ClCompile Include="Core\Storage\FileIO.cpp" />
     <ClCompile Include="Core\Input\Input.cpp" />
+    <ClCompile Include="Core\Config\AutoStart.cpp" />
     <ClCompile Include="Core\Config\NumberFormat.cpp" />
     <ClCompile Include="Core\UI\Notification.cpp" />
     <ClCompile Include="Runtime\Lua\LuaRuntime.cpp" />
@@ -144,6 +147,55 @@
     <ClCompile Include="ThirdParty\Lua54\lzio.c">
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="FIVEXKernel.h" />
+    <ClInclude Include="FiveXMenu.h" />
+    <ClInclude Include="FiveXRuntime.h" />
+    <ClInclude Include="CoreNatives.h" />
+    <ClInclude Include="GameTypes.h" />
+    <ClInclude Include="HookEngine.h" />
+    <ClInclude Include="Lifecycle.h" />
+    <ClInclude Include="LoopScheduler.h" />
+    <ClInclude Include="NativeInvoker.h" />
+    <ClInclude Include="NativeInvokerExtended.inl" />
+    <ClInclude Include="NativeLoop.h" />
+    <ClInclude Include="Core\Global.h" />
+    <ClInclude Include="Core\Config\AutoStart.h" />
+    <ClInclude Include="Core\Config\NumberFormat.h" />
+    <ClInclude Include="Core\Input\Input.h" />
+    <ClInclude Include="Core\Storage\FileIO.h" />
+    <ClInclude Include="Core\Storage\Paths.h" />
+    <ClInclude Include="Core\UI\Notification.h" />
+    <ClInclude Include="Runtime\Lua\LuaNativeCatalog.inl" />
+    <ClInclude Include="Runtime\Lua\LuaRuntime.h" />
+    <ClInclude Include="ThirdParty\Lua54\lapi.h" />
+    <ClInclude Include="ThirdParty\Lua54\lauxlib.h" />
+    <ClInclude Include="ThirdParty\Lua54\lcode.h" />
+    <ClInclude Include="ThirdParty\Lua54\lctype.h" />
+    <ClInclude Include="ThirdParty\Lua54\ldebug.h" />
+    <ClInclude Include="ThirdParty\Lua54\ldo.h" />
+    <ClInclude Include="ThirdParty\Lua54\lfunc.h" />
+    <ClInclude Include="ThirdParty\Lua54\lgc.h" />
+    <ClInclude Include="ThirdParty\Lua54\ljumptab.h" />
+    <ClInclude Include="ThirdParty\Lua54\llex.h" />
+    <ClInclude Include="ThirdParty\Lua54\llimits.h" />
+    <ClInclude Include="ThirdParty\Lua54\lmem.h" />
+    <ClInclude Include="ThirdParty\Lua54\lobject.h" />
+    <ClInclude Include="ThirdParty\Lua54\lopcodes.h" />
+    <ClInclude Include="ThirdParty\Lua54\lparser.h" />
+    <ClInclude Include="ThirdParty\Lua54\lprefix.h" />
+    <ClInclude Include="ThirdParty\Lua54\lstate.h" />
+    <ClInclude Include="ThirdParty\Lua54\lstring.h" />
+    <ClInclude Include="ThirdParty\Lua54\ltable.h" />
+    <ClInclude Include="ThirdParty\Lua54\ltm.h" />
+    <ClInclude Include="ThirdParty\Lua54\lua.h" />
+    <ClInclude Include="ThirdParty\Lua54\luaconf.h" />
+    <ClInclude Include="ThirdParty\Lua54\lualib.h" />
+    <ClInclude Include="ThirdParty\Lua54\lundump.h" />
+    <ClInclude Include="ThirdParty\Lua54\lvm.h" />
+    <ClInclude Include="ThirdParty\Lua54\lxboxfmt.h" />
+    <ClInclude Include="ThirdParty\Lua54\lzio.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

@@ -7,6 +7,12 @@
 #define FIVEX_SCRIPT_DISPATCHER_ADDRESS 0x83525E00
 #define FIVEX_TITLE_STABILITY_MS 1500
 
+// The RGH plugin loader cannot run the full Xbox DLL CRT bootstrap safely.
+// Initialize only the multithread runtime after the XAPI heap is ready. This
+// creates the CRT lock table up front and prevents _mtinitlocknum from trying
+// to initialize lock 10 through _lock(10), which recurses indefinitely.
+extern "C" INT __cdecl _mtinit();
+
 static HANDLE g_module;
 static volatile LONG g_stop;
 static volatile LONG g_callbacks;
@@ -85,7 +91,7 @@ extern "C" BOOL WINAPI FiveXEntry(HANDLE module, DWORD reason, LPVOID) {
         g_getCurrentTitleId=NULL;
         g_gtaCandidateSince=0;
         g_lastTitleId=0xFFFFFFFF;
-        XapiInitHeap();
+        if (!XapiInitHeap() || !_mtinit()) return FALSE;
         HANDLE thread=NULL;
         DWORD threadId=0;
         DWORD status=ExCreateThread(&thread,FIVEX_WORKER_STACK_SIZE,&threadId,

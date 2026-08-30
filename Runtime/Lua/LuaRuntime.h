@@ -12,6 +12,7 @@ enum FiveXLuaResourceState {
 struct FiveXLuaResourceInfo {
 	CHAR Name[64];
 	FiveXLuaResourceState State;
+	BOOL AutoStart;
 	INT ScriptCount;
 	INT ThreadCount;
 	SIZE_T MemoryUsed;
@@ -29,4 +30,5 @@ const CHAR* FiveXLuaResourceStateText(INT index);
 BOOL FiveXLuaResourceStart(const CHAR* name);
 BOOL FiveXLuaResourceStop(const CHAR* name);
 BOOL FiveXLuaResourceRestart(const CHAR* name);
+BOOL FiveXLuaResourceSetAutoStart(const CHAR* name, BOOL enabled);
 VOID FiveXLuaResourceStopAll();

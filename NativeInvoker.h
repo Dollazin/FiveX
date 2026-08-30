@@ -70,7 +70,7 @@ private:
 	FiveXNativeContext Context;
 };
 
-inline BOOL FiveXNativeCall(DWORD hash, FiveXNativeContext* context) {
+inline DWORD FiveXFindNativeHandler(DWORD hash) {
 	FiveXNativeRegistration** table = (FiveXNativeRegistration**)0x83DDCD08;
 	FiveXNativeRegistration* registration = table[hash & 0xFF];
 
@@ -80,15 +80,25 @@ inline BOOL FiveXNativeCall(DWORD hash, FiveXNativeContext* context) {
 			count = 7;
 
 		for (DWORD index = 0; index < count; ++index) {
-			if (registration->Hashes[index] == hash && registration->Handlers[index]) {
-				((VOID(*)(FiveXNativeContext*))registration->Handlers[index])(context);
-				return TRUE;
-			}
+			if (registration->Hashes[index] == hash && registration->Handlers[index])
+				return registration->Handlers[index];
 		}
 		registration = registration->Previous;
 	}
 
-	return FALSE;
+	return 0;
+}
+
+inline BOOL FiveXNativeAvailable(DWORD hash) {
+	return FiveXFindNativeHandler(hash) != 0;
+}
+
+inline BOOL FiveXNativeCall(DWORD hash, FiveXNativeContext* context) {
+	const DWORD handler = FiveXFindNativeHandler(hash);
+	if (!handler)
+		return FALSE;
+	((VOID(*)(FiveXNativeContext*))handler)(context);
+	return TRUE;
 }
 
 template <typename T>

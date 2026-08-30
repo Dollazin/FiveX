@@ -1,14 +1,15 @@
-# dolla_fuel_fivex
+# dolla_fuel
 
 Versao do sistema de combustivel adaptada ao FiveX no Xbox 360.
 
 ## Uso
 
 1. Compile o FiveX com os novos bindings de rope.
-2. Copie esta pasta para `Hdd:\FiveX\Resources\dolla_fuel_fivex` ou para a
-   pasta equivalente em `Usb0`/`Usb1`.
+2. Copie as pastas `drawhud` e `dolla_fuel` para
+   `Hdd:\FiveX\Resources` ou para a pasta equivalente em `Usb0`/`Usb1`.
 3. Abra o menu do FiveX com `RB + X`.
-4. Use `Refresh Resouces` e inicie `dolla_fuel_fivex`.
+4. Use `Refresh Resouces` e inicie `dolla_fuel`. A dependência `drawhud` será
+   iniciada automaticamente.
 5. Use o direcional direito para pegar, conectar, retirar e devolver o bico.
 
 ## Diferencas da versao FiveM
@@ -20,3 +21,4 @@ Versao do sistema de combustivel adaptada ao FiveX no Xbox 360.
 - o consumo usa velocidade e acelerador como carga do motor, pois a versao
   Xbox 360 nao expoe `GET_VEHICLE_CURRENT_RPM`;
 - nao usa servidor, rede, NUI, state bags ou framework.
+- usa a interface compartilhada da resource `drawhud` sem HTML.

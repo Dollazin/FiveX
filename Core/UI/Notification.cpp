@@ -1,5 +1,5 @@
 #include "Notification.h"
-#include "../../GameNatives.h"
+#include "../../CoreNatives.h"
 #include <stdarg.h>
 #include <stdio.h>
 

@@ -29,6 +29,12 @@ Ao executar **Refresh Resouces**, resources novas entram no catálogo. Se uma
 pasta foi removida, a resource é parada primeiro, seus objetos são limpos e a
 entrada desaparece do menu. Não existe estado `MISSING`.
 
+No menu, pressione `X` sobre uma resource para alternar seu auto-start. A
+marcação `AUTO-START` aparece em amarelo e é persistida em
+`Hdd:\FiveX\FiveX.ini`. As resources marcadas são iniciadas uma única vez por
+carregamento do FiveX, somente depois de `COMBINED_READY`; um refresh manual
+não dispara o auto-start.
+
 ## 2. Estrutura mínima
 
 ```text
@@ -66,9 +72,10 @@ São implementadas:
 - `shared_script` e `shared_scripts`;
 - `dependency` e `dependencies`.
 
-Os scripts são carregados na ordem em que aparecem no manifest. Caminhos
-relativos não podem conter `..` nem `:`. Wildcards como `client/*.lua` ainda
-não são suportados: liste cada arquivo explicitamente.
+Os scripts são carregados na ordem em que aparecem no manifest. Caminhos com
+`/` ou `\` são normalizados para o separador do Xbox, inclusive em subpastas.
+Caminhos relativos não podem conter `..` nem `:`. Wildcards como
+`client/*.lua` ainda não são suportados: liste cada arquivo explicitamente.
 
 As seguintes entradas são reconhecidas e ignoradas para facilitar o uso de
 manifests existentes:
@@ -246,8 +253,15 @@ operações de soma, subtração, multiplicação e divisão.
 
 ## 10. Natives do GTA V
 
-O catálogo expõe 2.581 entradas chamáveis por nome, geradas a partir dos hashes
-Xbox de `GameNatives.h` e dos metadados em `Tools/NativeMetadata/natives.json`.
+O catálogo é gerado com as assinaturas oficiais do FiveM em
+`Tools/NativeMetadata/natives_fivem.json` e usa somente os `jhash` legados de
+32 bits. Cada resource recebe um resolvedor leve; o wrapper Lua de uma native
+só é criado e armazenado quando o script acessa aquele nome pela primeira vez.
+Nesse momento o FiveX também confirma que existe um handler na build do Xbox.
+
+O catálogo gerado contém 4.905 nomes candidatos, incluindo aliases. Entradas
+sem handler Xbox não são expostas à resource. Como os wrappers são resolvidos
+sob demanda, várias resources não duplicam milhares de closures na memória.
 
 ```lua
 local player = PlayerId()
@@ -300,7 +314,9 @@ vector3
 
 Argumentos diretos aceitam `nil`, boolean, inteiro de 32 bits, float, string e
 `vector3`. Use `1.0` quando a native espera float; `1` é tratado como inteiro.
-Use hashes de 32 bits do Xbox 360, não hashes de 64 bits da versão PC.
+Use hashes de 32 bits do Xbox 360, não hashes de 64 bits da versão PC. Resources
+que chamam natives por nome usam as assinaturas Lua do FiveM sempre que existe
+um `jhash` correspondente.
 
 Se o hash já estiver no catálogo seguro, o número de argumentos e o retorno
 precisam corresponder à assinatura registrada. Natives conhecidas que exigem
@@ -332,8 +348,20 @@ SetModelAsNoLongerNeeded, CreateVehicle, DeleteEntity,
 SetVehicleEngineOn, IsControlJustPressed
 ```
 
+Os bindings manuais também aceitam as formas usuais do FiveM. Por exemplo,
+`SetEntityCoords` aceita os quatro argumentos básicos ou os oito argumentos
+com flags; `GetGroundZFor3dCoord` aceita o `includeWater` do FiveM; e
+`SetVehicleEngineOn` aceita o quarto argumento `disableAutoStart`, ignorado no
+Xbox porque essa build não possui flag equivalente.
+
 Além deles, use os nomes disponíveis em
 `Runtime/Lua/LuaNativeCatalog.inl`.
+
+Esse catálogo é gerado diretamente de
+`Tools/NativeMetadata/natives_fivem.json`. O gerador usa apenas definições que
+possuem `jhash` legado de 32 bits e não lê os wrappers C++ do núcleo. Ao usar
+uma native pela primeira vez, a runtime valida seu hash na tabela nativa do
+GTA V do Xbox e mantém o wrapper em cache naquela resource.
 
 ### Corda física
 
@@ -353,14 +381,15 @@ AttachEntitiesToRope(
     rope, entity1, entity2,
     point1.x, point1.y, point1.z,
     point2.x, point2.y, point2.z,
-    initialLength, false, false
+    initialLength, false, false, '', ''
 )
 ```
 
-Os ponteiros internos opcionais de `ADD_ROPE` e
-`ATTACH_ENTITIES_TO_ROPE` são preenchidos com `NULL` pelo binding seguro e
-não aparecem como argumentos Lua. `DeleteRope(rope)` recebe o handle normal;
-o runtime cria o ponteiro temporário exigido pela native Xbox.
+O ponteiro interno opcional de `ADD_ROPE` é preenchido com `NULL` pelo binding
+seguro e não aparece como argumento Lua. Os dois últimos argumentos de
+`AttachEntitiesToRope` são os nomes opcionais dos bones e podem usar strings
+vazias. `DeleteRope(rope)` recebe o handle normal; o runtime cria o ponteiro
+temporário exigido pela native Xbox.
 
 ## 12. Exemplo: carregar e criar um veículo
 
@@ -400,7 +429,7 @@ que o runtime não consegue rastrear; a própria resource deve limpá-los em
 
 | Item | Limite |
 | --- | ---: |
-| Resources catalogadas | 16 |
+| Resources catalogadas | 64 |
 | Scripts por resource | 32 |
 | Dependências por resource | 12 |
 | Threads por resource | 64 |

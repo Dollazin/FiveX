@@ -20,10 +20,11 @@ um mod menu, não possui servidor local e não inclui funções de gameplay.
 - Lua 5.4.8 embutido no XEX;
 - leitura simultânea de resources no HDD, `Usb0` e `Usb1`;
 - interface in-game para atualizar, iniciar e parar resources;
+- auto-start persistente por resource, configurado diretamente no menu;
 - estados visíveis no menu: `STOPPED`, `STARTED` e `FAILED`;
 - scheduler com `CreateThread`, `Wait` e `SetTimeout`;
 - eventos, dependências e exports entre resources;
-- `vector3`/`vec3` e catálogo de natives do GTA V para Xbox 360;
+- `vector3`/`vec3` e catálogo de natives com assinaturas FiveM, filtrado pelos handlers disponíveis no Xbox 360;
 - isolamento de memória e limite de instruções por resource;
 - encerramento automático de uma resource em execução quando sua pasta é
   removida e o usuário seleciona **Refresh Resouces**.
@@ -83,9 +84,15 @@ HDD, `Usb0`, `Usb1` é usada.
 | `A` sobre **Refresh Resouces** | Ler novamente as pastas |
 | `A` sobre uma resource parada | Iniciar |
 | `A` sobre uma resource ativa | Parar |
+| `X` sobre uma resource | Ativar ou desativar o auto-start |
 
 Enquanto o menu está aberto, os controles do GTA são bloqueados para evitar
 ações acidentais como abrir o celular.
+
+Resources marcadas exibem `AUTO-START` em amarelo. A seleção é salva em
+`Hdd:\FiveX\FiveX.ini` e aplicada somente durante a inicialização do FiveX,
+depois que o estado `COMBINED_READY` do jogo permanece estável. Atualizar as
+pastas pelo menu não inicia automaticamente uma resource marcada.
 
 ## Criando a primeira resource
 
@@ -132,9 +139,12 @@ limites está em [LUA_RESOURCES.md](LUA_RESOURCES.md).
 Uma resource mínima pronta para copiar também está em
 [`Examples/hello_fivex`](Examples/hello_fivex).
 
-O exemplo [`Examples/dolla_fuel_fivex`](Examples/dolla_fuel_fivex) demonstra
+O exemplo [`Examples/dolla_fuel`](Examples/dolla_fuel) demonstra
 um sistema completo de combustível com bomba, bico e mangueira física no Xbox
 360. Ele também serve como referência para as bindings seguras de rope.
+
+O exemplo [`Examples/drawhud`](Examples/drawhud) demonstra uma HUD configurável
+feita somente com `DrawSprite`, `DrawRect` e `DrawText`, sem HTML.
 
 ## Compilando a source
 
@@ -160,7 +170,8 @@ Core/                 Entrada, armazenamento, input e notificações
 Examples/             Resources pequenas usadas como referência
 Runtime/Lua/          Runtime, catálogo de natives e gerenciamento de resources
 ThirdParty/Lua54/     Lua 5.4.8 adaptado para o toolchain Xbox 360
-Tools/                Gerador do catálogo de natives
+Tools/                Metadados FiveM e gerador independente do catálogo Lua
+CoreNatives.h         Wrappers tipados usados somente pelo núcleo C++
 FiveXMenu.cpp         Interface in-game
 Main.cpp              Entrada do XEX, detecção do GTA e patches de compatibilidade
 ```

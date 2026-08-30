@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Application">
+      <UniqueIdentifier>{766DD2FD-D11C-4FC4-A3D3-21201984DA9C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{43910D04-87C0-4E6E-A85D-3C666C1611EA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Config">
+      <UniqueIdentifier>{99BA81B4-F14C-48CB-A6B2-A6986B46BD5A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Input">
+      <UniqueIdentifier>{7EF1CE81-5885-48D0-A2B6-2960B6CA10B1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Storage">
+      <UniqueIdentifier>{3375753F-532C-4DCD-9C62-3836B27C344B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\UI">
+      <UniqueIdentifier>{2CE48596-F9BC-4229-945B-1D3B071C16AB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Native">
+      <UniqueIdentifier>{69F2CD96-B2E0-49A3-82C8-5DE7B8DF57B9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Runtime">
+      <UniqueIdentifier>{A8AC6B44-0356-4AB1-A707-A46433A4F7E5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Runtime\Lua">
+      <UniqueIdentifier>{E54AFB33-56C8-4F2C-9CA4-2F4F854C07B5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Third Party">
+      <UniqueIdentifier>{BBA410CC-8DBD-44E8-8764-600447FF8AC0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Third Party\Lua 5.4">
+      <UniqueIdentifier>{B1713FB7-3724-407E-A520-CC9C2CB1ED7C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Third Party\Lua 5.4\Source">
+      <UniqueIdentifier>{03EE56B5-9F2F-4B47-9D67-B62D047E37CA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Third Party\Lua 5.4\Headers">
+      <UniqueIdentifier>{13166AC4-B3DB-4630-8CBB-96721A6B4D93}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp"><Filter>Application</Filter></ClCompile>
+    <ClCompile Include="FiveXRuntime.cpp"><Filter>Application</Filter></ClCompile>
+    <ClCompile Include="FiveXMenu.cpp"><Filter>Application</Filter></ClCompile>
+    <ClCompile Include="LoopScheduler.cpp"><Filter>Core</Filter></ClCompile>
+    <ClCompile Include="Paths.cpp"><Filter>Core\Storage</Filter></ClCompile>
+    <ClCompile Include="Core\Config\AutoStart.cpp"><Filter>Core\Config</Filter></ClCompile>
+    <ClCompile Include="Core\Config\NumberFormat.cpp"><Filter>Core\Config</Filter></ClCompile>
+    <ClCompile Include="Core\Input\Input.cpp"><Filter>Core\Input</Filter></ClCompile>
+    <ClCompile Include="Core\Storage\FileIO.cpp"><Filter>Core\Storage</Filter></ClCompile>
+    <ClCompile Include="Core\UI\Notification.cpp"><Filter>Core\UI</Filter></ClCompile>
+    <ClCompile Include="HookEngine.cpp"><Filter>Native</Filter></ClCompile>
+    <ClCompile Include="NativeLoop.cpp"><Filter>Native</Filter></ClCompile>
+    <ClCompile Include="Runtime\Lua\LuaRuntime.cpp"><Filter>Runtime\Lua</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lapi.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lauxlib.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lbaselib.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lcode.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lcorolib.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lctype.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\ldebug.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\ldo.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\ldump.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lfunc.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lgc.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\llex.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lmathlib.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lmem.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lobject.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lopcodes.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lparser.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lstate.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lstring.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lstrlib.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\ltable.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\ltablib.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\ltm.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lundump.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lutf8lib.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lvm.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lxboxfmt.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\Lua54\lzio.c"><Filter>Third Party\Lua 5.4\Source</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="FIVEXKernel.h"><Filter>Application</Filter></ClInclude>
+    <ClInclude Include="FiveXMenu.h"><Filter>Application</Filter></ClInclude>
+    <ClInclude Include="FiveXRuntime.h"><Filter>Application</Filter></ClInclude>
+    <ClInclude Include="Lifecycle.h"><Filter>Core</Filter></ClInclude>
+    <ClInclude Include="LoopScheduler.h"><Filter>Core</Filter></ClInclude>
+    <ClInclude Include="Core\Global.h"><Filter>Core</Filter></ClInclude>
+    <ClInclude Include="Core\Config\AutoStart.h"><Filter>Core\Config</Filter></ClInclude>
+    <ClInclude Include="Core\Config\NumberFormat.h"><Filter>Core\Config</Filter></ClInclude>
+    <ClInclude Include="Core\Input\Input.h"><Filter>Core\Input</Filter></ClInclude>
+    <ClInclude Include="Core\Storage\FileIO.h"><Filter>Core\Storage</Filter></ClInclude>
+    <ClInclude Include="Core\Storage\Paths.h"><Filter>Core\Storage</Filter></ClInclude>
+    <ClInclude Include="Core\UI\Notification.h"><Filter>Core\UI</Filter></ClInclude>
+    <ClInclude Include="CoreNatives.h"><Filter>Native</Filter></ClInclude>
+    <ClInclude Include="GameTypes.h"><Filter>Native</Filter></ClInclude>
+    <ClInclude Include="HookEngine.h"><Filter>Native</Filter></ClInclude>
+    <ClInclude Include="NativeInvoker.h"><Filter>Native</Filter></ClInclude>
+    <ClInclude Include="NativeInvokerExtended.inl"><Filter>Native</Filter></ClInclude>
+    <ClInclude Include="NativeLoop.h"><Filter>Native</Filter></ClInclude>
+    <ClInclude Include="Runtime\Lua\LuaNativeCatalog.inl"><Filter>Runtime\Lua</Filter></ClInclude>
+    <ClInclude Include="Runtime\Lua\LuaRuntime.h"><Filter>Runtime\Lua</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lapi.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lauxlib.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lcode.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lctype.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\ldebug.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\ldo.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lfunc.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lgc.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\ljumptab.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\llex.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\llimits.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lmem.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lobject.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lopcodes.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lparser.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lprefix.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lstate.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lstring.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\ltable.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\ltm.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lua.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\luaconf.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lualib.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lundump.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lvm.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lxboxfmt.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\Lua54\lzio.h"><Filter>Third Party\Lua 5.4\Headers</Filter></ClInclude>
+  </ItemGroup>
+</Project>

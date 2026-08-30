@@ -1,7 +1,7 @@
 #include "NativeLoop.h"
 #include "HookEngine.h"
 #include "LoopScheduler.h"
-#include "GameNatives.h"
+#include "CoreNatives.h"
 #include "Lifecycle.h"
 
 static FiveXHook g_hook;

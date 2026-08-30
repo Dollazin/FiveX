@@ -1,0 +1,16 @@
+FiveX Lua native catalog report
+Generated: 2026-08-28 17:34:14Z
+
+Official metadata entries with Xbox jhash: 4878
+Safe metadata natives added: 4328
+Official aliases added: 577
+Final callable Lua globals: 4905
+Safe pointer natives added: 204
+Pointer signatures skipped: 171
+Unsupported signatures skipped: 379
+Signatures over 24 arguments skipped: 0
+Alias name conflicts skipped: 0
+
+Typed C++ wrapper headers are not inputs to this generator.
+Hashes from the 64-bit PC field are not emitted. Only legacy 32-bit Xbox jhash values are used.
+Candidates not present in the running Xbox native registration table are not exposed to Lua.
