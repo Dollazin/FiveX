@@ -179,6 +179,7 @@ Main.cpp              Entrada do XEX, detecção do GTA e patches de compatibili
 ## Créditos e componentes de terceiros
 
 - **Dolla** — criador, autor e mantenedor do FiveX;
+- **RGV Batera** - Idealizador;
 - **OpenAI Codex** — assistência no desenvolvimento, revisão da source e
   documentação do projeto;
 - [Lua 5.4.8](https://www.lua.org/) — licença incluída em
